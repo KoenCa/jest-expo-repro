@@ -1,50 +1,66 @@
-# Welcome to your Expo app 👋
+# Jest expo with Sentry reproduction
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Reproduction to showcase that the `transformIgnorePatterns` of the Jext Expo preset
+is not up-to-date for use with `@sentry/react-native`.
 
-## Get started
+How I setup this reproduction:
+1. Create expo app with `npx create-expo-app@latest`
+2. Installed sentry with `npx expo install @sentry/react-native`
+3. Added Sentry import to `ThemedText.tsx` and called `addBreadcrumb`
 
-1. Install dependencies
+Now the tests won't run when exectued with: `npm run test`. The following error
+is shown:
 
-   ```bash
-   npm install
-   ```
+```
+Jest encountered an unexpected token
 
-2. Start the app
+Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
 
-   ```bash
-    npx expo start
-   ```
+Out of the box Jest supports Babel, which will be used to transform your files into valid JS based on your Babel configuration.
 
-In the output, you'll find options to open the app in a
+By default "node_modules" folder is ignored by transformers.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Here's what you can do:
+• If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.
+• If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript
+• To have some of your "node_modules" files transformed, you can specify a custom "transformIgnorePatterns" in your config.
+• If you need a custom transformation specify a "transform" option in your config.
+• If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the "moduleNameMapper" config option.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+You'll find more details and examples of these config options in the docs:
+https://jestjs.io/docs/configuration
+For information about custom transformations, see:
+https://jestjs.io/docs/code-transformation
 
-## Get a fresh project
+Details:
 
-When you're ready, run:
+/Users/koencastermans/Documents/git/jest-expo-repro/node_modules/@sentry/react-native/dist/js/index.js:1
+({"Object.<anonymous>":function(module,exports,require,__dirname,__filename,jest){export { addGlobalEventProcessor, addBreadcrumb, captureException, captureEvent, captureMessage, getHubFromCarrier, getCurrentHub, Hub, Scope, setContext, setExtra, setExtras, setTag, setTags, setUser, startTransaction,
+                                                                                 ^^^^^^
 
-```bash
-npm run reset-project
+SyntaxError: Unexpected token 'export'
+
+1 | import { Text, type TextProps, StyleSheet } from 'react-native'
+> 2 | import * as Sentry from '@sentry/react-native'
+   | ^
+3 |
+4 | import { useThemeColor } from '@/hooks/useThemeColor'
+5 |
+
+at Runtime.createScriptFromCode (node_modules/jest-runtime/build/index.js:1505:14)
+at Object.require (components/ThemedText.tsx:2:1)
+at Object.require (components/__tests__/ThemedText-test.tsx:4:1)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+In the [Unit testing with Jest](https://docs.expo.dev/develop/unit-testing/#installation-and-configuration)
+docs of Expo an up-to-date `transformIgnorePatterns` is available which includes the
+new way of using Sentry in Expo:
 
-## Learn more
+```
+  "transformIgnorePatterns": [
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg)"
+  ]
+```
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+When we add this to `jest` object in the `package.json` then the tests start
+working again.
